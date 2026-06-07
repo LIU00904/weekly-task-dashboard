@@ -447,7 +447,7 @@ const server = http.createServer(async (request, response) => {
   if (url.pathname.startsWith("/api/") && (await handleApi(request, response, url))) return;
 
   const pathname = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
-  const filePath = path.join(root, pathname);
+  const filePath = path.resolve(root, `.${pathname}`);
 
   if (!filePath.startsWith(root)) {
     send(response, 403, "Forbidden");
