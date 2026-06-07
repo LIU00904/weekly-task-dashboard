@@ -137,3 +137,29 @@ https://你的-render域名/auth/feishu/callback
 ```text
 https://你的-render域名/form.html
 ```
+
+## 两个独立网站
+
+如果要拆成两个独立 Render 服务，可以用同一个 GitHub 仓库创建两个 Web Service：
+
+### 周报看板服务
+
+```text
+Service Name: weekly-task-dashboard
+HOME_PAGE: index.html
+访问地址: https://weekly-task-dashboard.onrender.com/
+```
+
+### 填写系统服务
+
+```text
+Service Name: weekly-task-form
+HOME_PAGE: form.html
+访问地址: https://weekly-task-form.onrender.com/
+```
+
+两个服务都使用同一套飞书环境变量。填写系统服务需要在飞书后台增加它自己的回调地址：
+
+```text
+https://weekly-task-form.onrender.com/auth/feishu/callback
+```

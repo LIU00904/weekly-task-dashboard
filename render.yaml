@@ -32,3 +32,5 @@ services:
         value: 2
       - key: FEISHU_OUTPUT
         value: data.json
+      - key: HOME_PAGE
+        value: index.html

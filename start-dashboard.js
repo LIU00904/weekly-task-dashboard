@@ -8,6 +8,7 @@ const root = __dirname;
 const port = Number(process.env.PORT || 8765);
 const syncHour = Number(process.env.SYNC_HOUR || 9);
 const syncMinute = Number(process.env.SYNC_MINUTE || 0);
+const homePage = process.env.HOME_PAGE || "index.html";
 const FEISHU_API = "https://open.feishu.cn/open-apis";
 const FEISHU_AUTH_URL = "https://accounts.feishu.cn/open-apis/authen/v1/authorize";
 const sessions = new Map();
@@ -446,7 +447,7 @@ const server = http.createServer(async (request, response) => {
   if (await handleAuth(request, response, url)) return;
   if (url.pathname.startsWith("/api/") && (await handleApi(request, response, url))) return;
 
-  const pathname = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
+  const pathname = decodeURIComponent(url.pathname === "/" ? `/${homePage}` : url.pathname);
   const filePath = path.resolve(root, `.${pathname}`);
 
   if (!filePath.startsWith(root)) {
