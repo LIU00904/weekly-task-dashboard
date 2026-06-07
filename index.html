@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>本周任务日历</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">氧气科技 · 本周工作驾驶舱</p>
+          <h1>成员任务日历</h1>
+          <p class="subtitle">按任务表「开始时间」归档，成员 → 日期 → 项目｜任务。点击日期、任务、图表都可以继续探索。</p>
+        </div>
+        <div class="hero-actions">
+          <button class="ghost-button" id="expandAll">展开全部</button>
+          <button class="primary-button" id="copySummary">复制汇总</button>
+        </div>
+      </header>
+
+      <section class="summary-grid" aria-label="本周汇总">
+        <article class="summary-card accent-blue">
+          <span>任务明细</span>
+          <strong id="totalRows">36</strong>
+          <small>展开后记录</small>
+        </article>
+        <article class="summary-card accent-purple">
+          <span>原始任务</span>
+          <strong>33</strong>
+          <small>飞书筛选结果</small>
+        </article>
+        <article class="summary-card accent-green">
+          <span>成员</span>
+          <strong id="memberCount">4</strong>
+          <small>本周参与</small>
+        </article>
+        <article class="summary-card accent-orange">
+          <span>项目</span>
+          <strong id="projectCount">15</strong>
+          <small>本周涉及</small>
+        </article>
+      </section>
+
+      <section class="insight-strip" aria-label="关键洞察">
+        <article>
+          <span>本周峰值</span>
+          <strong id="peakInsight">-</strong>
+          <small id="peakInsightMeta">按任务数量</small>
+        </article>
+        <article>
+          <span>主力项目</span>
+          <strong id="projectInsight">-</strong>
+          <small id="projectInsightMeta">点击项目标签可筛选</small>
+        </article>
+        <article>
+          <span>当前视角</span>
+          <strong id="focusInsight">-</strong>
+          <small id="focusInsightMeta">成员 / 项目 / 搜索条件</small>
+        </article>
+      </section>
+
+      <section class="panel top-overview" aria-label="项目总览">
+        <div class="toolbar">
+          <div>
+            <h2>项目对应任务数量</h2>
+            <p id="overviewMeta">按当前选择周统计对应任务数量</p>
+          </div>
+          <label class="search-box">
+            <span>搜索</span>
+            <input id="searchInput" type="search" placeholder="项目或任务关键词" />
+          </label>
+        </div>
+        <div id="projectOverviewList" class="project-overview-list compact-overview"></div>
+      </section>
+
+      <section class="dashboard">
+        <aside class="panel side-panel">
+          <div class="side-brand">
+            <strong>氧气看板</strong>
+            <span>Weekly cockpit</span>
+          </div>
+
+          <div class="side-section">
+            <p class="side-label">时间范围</p>
+            <div class="week-switcher vertical" aria-label="周切换">
+              <button class="ghost-button small" id="prevWeek" type="button">上一周</button>
+              <strong id="weekLabel">本周</strong>
+              <button class="ghost-button small" id="nextWeek" type="button">下一周</button>
+            </div>
+          </div>
+
+          <div class="panel-title compact-title">
+            <h2>成员</h2>
+            <span id="pageLabel">1 / 4</span>
+          </div>
+          <div class="member-list" id="memberList"></div>
+          <div class="pager">
+            <button id="prevMember">上一位</button>
+            <button id="nextMember">下一位</button>
+          </div>
+        </aside>
+
+        <div class="workspace">
+          <section class="panel main-panel">
+            <div class="toolbar">
+              <div>
+                <h2 id="activeMemberTitle">刘依晨</h2>
+                <p id="activeMemberMeta">12 条任务 · 3 个工作日</p>
+              </div>
+              <div class="mini-stats">
+                <span><strong id="avgTasks">0</strong> 平均/天</span>
+                <span><strong id="maxTasks">0</strong> 峰值</span>
+                <span><strong id="activeDays">0</strong> 活跃天</span>
+              </div>
+            </div>
+
+            <div class="filter-row" id="projectFilters" aria-label="项目筛选"></div>
+
+            <div class="view-controls">
+              <div class="segmented" aria-label="视图切换">
+                <button class="active" id="calendarView" type="button">日历</button>
+                <button id="listView" type="button">列表</button>
+              </div>
+              <button class="ghost-button small" id="densityToggle" type="button">舒展模式</button>
+              <button class="ghost-button small" id="emptyToggle" type="button">隐藏空日期</button>
+            </div>
+
+            <div class="calendar-week schedule-week" id="calendarWeek"></div>
+          </section>
+        </div>
+      </section>
+
+    </main>
+
+    <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
+    <aside class="drawer" id="taskDrawer" aria-hidden="true">
+      <button class="drawer-close" id="drawerClose" type="button">关闭</button>
+      <p class="eyebrow" id="drawerKicker">任务详情</p>
+      <h2 id="drawerTitle">详情</h2>
+      <p class="drawer-meta" id="drawerMeta"></p>
+      <div class="drawer-list" id="drawerList"></div>
+    </aside>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

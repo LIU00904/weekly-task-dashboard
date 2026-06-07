@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: weekly-task-dashboard
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: SYNC_HOUR
+        value: 9
+      - key: SYNC_MINUTE
+        value: 0
+      - key: FEISHU_APP_ID
+        sync: false
+      - key: FEISHU_APP_SECRET
+        sync: false
+      - key: FEISHU_APP_TOKEN
+        sync: false
+      - key: FEISHU_TABLE_ID
+        sync: false
+      - key: FEISHU_TASK_TABLE_ID
+        sync: false
+      - key: FEISHU_REPORT_TABLE_ID
+        sync: false
+      - key: FEISHU_MEMBER_TABLE_ID
+        sync: false
+      - key: FEISHU_VIEW_ID
+        sync: false
+      - key: FEISHU_WEEKS_BACK
+        value: 2
+      - key: FEISHU_OUTPUT
+        value: data.json

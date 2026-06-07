@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>周报任务填报</title>
+    <link rel="stylesheet" href="form.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Feishu Weekly Form</p>
+          <h1>周报任务填报</h1>
+          <p>自动识别飞书账号，按项目层级归档，并关联到“人物名 + 本周周一日期”的周报。</p>
+        </div>
+        <div class="user-card" id="userCard">
+          <div class="avatar">?</div>
+          <div>
+            <strong>未登录</strong>
+            <span>请先用飞书账号进入</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel login-panel" id="loginPanel">
+        <h2>先识别填写人</h2>
+        <p>点击后会跳到飞书授权页，回来以后我会用你的飞书账号自动匹配成员表。</p>
+        <a class="primary-link" href="/auth/feishu">用飞书登录</a>
+      </section>
+
+      <section class="panel form-panel hidden" id="formPanel">
+        <div class="panel-head">
+          <div>
+            <h2>填写任务</h2>
+            <p id="memberHint">正在匹配成员...</p>
+          </div>
+          <button class="ghost" type="button" id="reloadBtn">刷新项目</button>
+        </div>
+
+        <form id="taskForm">
+          <div class="grid">
+            <label>
+              <span>一级项目</span>
+              <select id="projectLevel0"></select>
+            </label>
+            <label>
+              <span>子分支</span>
+              <select id="projectLevel1"></select>
+            </label>
+            <label>
+              <span>继续分支</span>
+              <select id="projectLevel2"></select>
+            </label>
+          </div>
+
+          <div class="new-project">
+            <input id="newProjectName" type="text" placeholder="新增项目/分支名称" />
+            <button type="button" id="addProjectBtn">新增到当前层级</button>
+          </div>
+
+          <label class="full">
+            <span>任务内容</span>
+            <input id="taskName" type="text" placeholder="例如：6.5 华硕发稿*5" required />
+          </label>
+
+          <div class="grid">
+            <label>
+              <span>状态</span>
+              <select id="status">
+                <option>已完成</option>
+                <option>进行中</option>
+                <option>未开始</option>
+                <option>已停滞</option>
+              </select>
+            </label>
+            <label>
+              <span>任务日期</span>
+              <input id="taskDate" type="date" required />
+            </label>
+            <label>
+              <span>截止日期</span>
+              <input id="deadline" type="date" />
+            </label>
+          </div>
+
+          <label class="full">
+            <span>备注</span>
+            <textarea id="note" rows="4" placeholder="可选，比如补写原因、发稿批次、需要同步的信息"></textarea>
+          </label>
+
+          <div class="report-preview" id="reportPreview"></div>
+
+          <button class="submit" type="submit">提交并写入多维表格</button>
+        </form>
+      </section>
+
+      <section class="panel result-panel hidden" id="resultPanel"></section>
+    </main>
+    <script src="form.js"></script>
+  </body>
+</html>

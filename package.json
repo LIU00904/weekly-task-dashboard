@@ -1,0 +1,15 @@
+{
+  "name": "weekly-task-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Feishu weekly task dashboard and task submission form.",
+  "main": "start-dashboard.js",
+  "scripts": {
+    "start": "node start-dashboard.js",
+    "sync": "node sync-feishu.js",
+    "check": "node --check start-dashboard.js && node --check sync-feishu.js && node --check app.js && node --check form.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
