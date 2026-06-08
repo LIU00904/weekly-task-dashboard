@@ -34,3 +34,5 @@ services:
         value: data.json
       - key: HOME_PAGE
         value: index.html
+      - key: COOKIE_SECRET
+        generateValue: true

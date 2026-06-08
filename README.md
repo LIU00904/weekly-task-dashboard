@@ -114,6 +114,7 @@ FEISHU_WEEKS_BACK=2
 FEISHU_OUTPUT=data.json
 SYNC_HOUR=9
 SYNC_MINUTE=0
+COOKIE_SECRET=任意一串长随机字符
 ```
 
 不要把真实 `FEISHU_APP_SECRET` 写进 GitHub，只放在 Render 的环境变量里。

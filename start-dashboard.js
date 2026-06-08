@@ -13,7 +13,6 @@ const syncMinute = Number(process.env.SYNC_MINUTE || 0);
 const homePage = process.env.HOME_PAGE || "index.html";
 const FEISHU_API = "https://open.feishu.cn/open-apis";
 const FEISHU_AUTH_URL = "https://accounts.feishu.cn/open-apis/authen/v1/authorize";
-const sessions = new Map();
 
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -103,6 +102,33 @@ function makeId() {
   return crypto.randomBytes(24).toString("base64url");
 }
 
+function cookieSecret() {
+  return process.env.COOKIE_SECRET || getEnv("FEISHU_APP_SECRET");
+}
+
+function sign(value) {
+  return crypto.createHmac("sha256", cookieSecret()).update(value).digest("base64url");
+}
+
+function encodeSession(user) {
+  const payload = Buffer.from(JSON.stringify({ user, createdAt: Date.now() }), "utf8").toString("base64url");
+  return `${payload}.${sign(payload)}`;
+}
+
+function decodeSession(value) {
+  if (!value || !value.includes(".")) return null;
+  const [payload, signature] = value.split(".");
+  if (!payload || !signature || sign(payload) !== signature) return null;
+  try {
+    const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    const maxAge = 30 * 24 * 60 * 60 * 1000;
+    if (!session.user || Date.now() - Number(session.createdAt || 0) > maxAge) return null;
+    return session;
+  } catch {
+    return null;
+  }
+}
+
 function originFor(request) {
   const protocol = request.headers["x-forwarded-proto"] || "http";
   return `${protocol}://${request.headers.host}`;
@@ -113,14 +139,13 @@ function callbackUrl(request) {
 }
 
 function setSession(response, user) {
-  const sid = makeId();
-  sessions.set(sid, { user, createdAt: Date.now() });
-  response.setHeader("Set-Cookie", `sid=${encodeURIComponent(sid)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`);
+  const cookie = `sid=${encodeURIComponent(encodeSession(user))}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`;
+  response.setHeader("Set-Cookie", cookie);
 }
 
 function currentSession(request) {
   const sid = parseCookies(request).sid;
-  return sid ? sessions.get(sid) : null;
+  return decodeSession(sid);
 }
 
 async function readBody(request) {
