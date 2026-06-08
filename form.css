@@ -236,9 +236,98 @@ textarea:focus {
 }
 
 .submit {
+  position: relative;
   width: 100%;
   margin-top: 18px;
+  overflow: hidden;
   font-size: 18px;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    filter 0.18s ease;
+}
+
+.submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 22px 42px rgba(47, 107, 255, 0.34);
+}
+
+.submit:active {
+  transform: translateY(1px) scale(0.995);
+}
+
+.submit[disabled] {
+  cursor: wait;
+  filter: saturate(1.08);
+}
+
+.submit-label {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.submit.is-loading .submit-label::before {
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  border-radius: 999px;
+  content: "";
+  animation: spin 0.8s linear infinite;
+}
+
+.submit-progress {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.32);
+  opacity: 0;
+}
+
+.submit-progress::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 42%;
+  border-radius: 999px;
+  content: "";
+  background: linear-gradient(90deg, #fff, rgba(255, 255, 255, 0.45));
+  transform: translateX(-110%);
+}
+
+.submit.is-loading .submit-progress {
+  opacity: 1;
+}
+
+.submit.is-loading .submit-progress::before {
+  animation: loadingBar 1.15s ease-in-out infinite;
+}
+
+.submit.is-success {
+  background: linear-gradient(135deg, var(--green), var(--cyan));
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes loadingBar {
+  0% {
+    transform: translateX(-110%);
+  }
+
+  55% {
+    transform: translateX(90%);
+  }
+
+  100% {
+    transform: translateX(245%);
+  }
 }
 
 .result-panel.success {

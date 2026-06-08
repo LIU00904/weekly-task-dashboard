@@ -21,6 +21,8 @@ const els = {
   deadline: document.querySelector("#deadline"),
   note: document.querySelector("#note"),
   reportPreview: document.querySelector("#reportPreview"),
+  submitBtn: document.querySelector("#submitBtn"),
+  submitLabel: document.querySelector("#submitBtn .submit-label"),
 };
 
 function todayIso() {
@@ -127,6 +129,19 @@ function showResult(type, text) {
   els.resultPanel.textContent = text;
 }
 
+function setSubmitting(isSubmitting, label = "提交并写入多维表格") {
+  els.submitBtn.disabled = isSubmitting;
+  els.submitBtn.classList.toggle("is-loading", isSubmitting);
+  els.submitBtn.classList.remove("is-success");
+  els.submitLabel.textContent = label;
+}
+
+function setSubmitSuccess() {
+  els.submitBtn.classList.remove("is-loading");
+  els.submitBtn.classList.add("is-success");
+  els.submitLabel.textContent = "已提交，写入成功";
+}
+
 async function boot() {
   els.taskDate.value = todayIso();
   els.deadline.value = "";
@@ -166,6 +181,7 @@ els.addProjectBtn.addEventListener("click", async () => {
 
 els.taskForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (els.submitBtn.disabled) return;
   const projectId = selectedProjectId();
   if (!projectId) return showResult("error", "先选择一个项目或分支。");
   const payload = {
@@ -177,14 +193,19 @@ els.taskForm.addEventListener("submit", async (event) => {
     note: els.note.value.trim(),
   };
   try {
+    setSubmitting(true, "正在写入飞书...");
+    showResult("success", "正在提交，请稍等。系统会自动关联项目、成员和本周周报。");
     const data = await api("/api/tasks", {
       method: "POST",
       body: JSON.stringify(payload),
     });
     els.taskName.value = "";
     els.note.value = "";
+    setSubmitSuccess();
     showResult("success", `提交成功：已写入任务，并关联到 ${data.member} 的本周周报。`);
+    setTimeout(() => setSubmitting(false), 1500);
   } catch (error) {
+    setSubmitting(false);
     showResult("error", error.message);
   }
 });
