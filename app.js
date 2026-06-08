@@ -63,6 +63,7 @@ let selectedProject = "全部";
 let viewMode = "calendar";
 let compact = false;
 let hideEmptyDays = false;
+let expandedRootProjects = new Set();
 
 const memberList = document.querySelector("#memberList");
 const pageLabel = document.querySelector("#pageLabel");
@@ -148,7 +149,7 @@ function refreshDerivedData() {
   const activeWeek = weekOptions[activeWeekIndex];
   tasks = activeWeek ? allTasks.filter((task) => task.date >= activeWeek.start && task.date <= activeWeek.end) : [...allTasks];
   weekDays = buildWeekDays(tasks);
-  projects = [...new Set(tasks.map((task) => task.project))];
+  projects = [...new Set(tasks.map((task) => task.rootProject || task.project))];
   projectColors = Object.fromEntries(projects.map((project, index) => [project, palette[index % palette.length]]));
   members = [...new Set(tasks.map((task) => task.member))]
     .map((member) => ({
@@ -158,7 +159,8 @@ function refreshDerivedData() {
     }))
     .sort((a, b) => b.count - a.count);
   if (activeIndex >= members.length) activeIndex = 0;
-  if (selectedProject !== "全部" && !projects.includes(selectedProject)) selectedProject = "全部";
+  const selectableProjects = new Set(tasks.flatMap((task) => [task.rootProject || task.project, task.project]));
+  if (selectedProject !== "全部" && !selectableProjects.has(selectedProject)) selectedProject = "全部";
 }
 
 async function loadData() {
@@ -173,6 +175,8 @@ async function loadData() {
       date: task.date,
       member: task.member,
       project: task.project || "未归类",
+      subProject: task.subProject || task.project || "未归类",
+      rootProject: task.rootProject || task.project || "未归类",
       name: task.name,
     }));
   } catch (error) {
@@ -182,6 +186,14 @@ async function loadData() {
   const restoredWeekIndex = weekOptions.findIndex((week) => week.start === previousWeekStart);
   activeWeekIndex = restoredWeekIndex >= 0 ? restoredWeekIndex : Math.max(0, weekOptions.length - 1);
   refreshDerivedData();
+}
+
+function taskMatchesProject(task, project) {
+  return project === "全部" || task.project === project || task.subProject === project || task.rootProject === project;
+}
+
+function taskSearchText(task) {
+  return [task.rootProject, task.subProject, task.project, task.name, task.member].filter(Boolean).join(" ").toLowerCase();
 }
 
 function countBy(field, source = tasks) {
@@ -197,14 +209,14 @@ function entriesByCount(data, limit = Infinity) {
 
 function weekFilteredTasks() {
   return tasks.filter((task) => {
-    const hitProject = selectedProject === "全部" || task.project === selectedProject;
-    const hitSearch = [task.project, task.name, task.member].join(" ").toLowerCase().includes(searchTerm);
+    const hitProject = taskMatchesProject(task, selectedProject);
+    const hitSearch = taskSearchText(task).includes(searchTerm);
     return hitProject && hitSearch;
   });
 }
 
 function searchedTasks() {
-  return tasks.filter((task) => [task.project, task.name, task.member].join(" ").toLowerCase().includes(searchTerm));
+  return tasks.filter((task) => taskSearchText(task).includes(searchTerm));
 }
 
 function getFilteredTasks({ memberOnly = true } = {}) {
@@ -212,8 +224,8 @@ function getFilteredTasks({ memberOnly = true } = {}) {
   const activeMember = members[activeIndex].name;
   return tasks.filter((task) => {
     const hitMember = !memberOnly || task.member === activeMember;
-    const hitProject = selectedProject === "全部" || task.project === selectedProject;
-    const hitSearch = [task.project, task.name, task.member].join(" ").toLowerCase().includes(searchTerm);
+    const hitProject = taskMatchesProject(task, selectedProject);
+    const hitSearch = taskSearchText(task).includes(searchTerm);
     return hitMember && hitProject && hitSearch;
   });
 }
@@ -225,7 +237,7 @@ function formatDate(date) {
 
 function taskMarkup(task, index) {
   return `
-    <button class="task-card" data-task-index="${index}" style="--task-color:${projectColors[task.project]}">
+    <button class="task-card" data-task-index="${index}" style="--task-color:${projectColors[task.rootProject] || projectColors[task.project]}">
       <span class="task-project">${task.project}</span>
       <div class="task-name">${task.name}</div>
     </button>
@@ -243,7 +255,7 @@ function renderMembers() {
     return;
   }
   members.forEach((member, index) => {
-    const topProject = entriesByCount(countBy("project", tasks.filter((task) => task.member === member.name)), 1)[0]?.[0] || "-";
+    const topProject = entriesByCount(countBy("rootProject", tasks.filter((task) => task.member === member.name)), 1)[0]?.[0] || "-";
     const button = document.createElement("button");
     button.className = `member-tab ${index === activeIndex ? "active" : ""}`;
     button.innerHTML = `
@@ -264,7 +276,7 @@ function renderMembers() {
 }
 
 function renderProjectFilters() {
-  const counts = countBy("project");
+  const counts = countBy("rootProject");
   const chips = [["全部", tasks.length], ...entriesByCount(counts)];
   projectFilters.innerHTML = chips
     .map(([project, count]) => {
@@ -288,24 +300,62 @@ function renderWeekSwitcher() {
 }
 
 function renderProjectOverview() {
-  const entries = entriesByCount(countBy("project", searchedTasks()));
-  const max = Math.max(...entries.map(([, value]) => value), 1);
-  projectOverviewList.innerHTML = entries
-    .map(([project, count], index) => {
-      const color = projectColors[project] || palette[index % palette.length];
+  const groups = projectGroups(searchedTasks());
+  const max = Math.max(...groups.map((group) => group.count), 1);
+  projectOverviewList.innerHTML = groups
+    .map((group, index) => {
+      const color = projectColors[group.root] || palette[index % palette.length];
+      const expandedClass = expandedRootProjects.has(group.root) ? "expanded" : "";
       return `
-        <button class="project-system-row ${selectedProject === project ? "active" : ""}" data-project="${project}">
-          <span class="project-icon" style="--dot:${color}">${index + 1}</span>
-          <span class="project-system-main">
-            <strong>${project}</strong>
-            <span class="project-meter"><i style="width:${(count / max) * 100}%; --dot:${color}"></i></span>
-          </span>
-          <span class="project-score">${count}<small>条</small></span>
-          <span class="project-arrow">›</span>
-        </button>
+        <article class="project-system-row project-tree-card ${selectedProject === group.root ? "active" : ""} ${expandedClass}" style="--dot:${color}">
+          <button class="project-tree-root" data-root-project="${group.root}">
+            <span class="project-icon">${index + 1}</span>
+            <span class="project-system-main">
+              <strong>${group.root}</strong>
+              <small>${group.children.length} 个子项目 · 按任务热度排序</small>
+              <span class="project-meter"><i style="width:${(group.count / max) * 100}%"></i></span>
+            </span>
+            <span class="project-score">${group.count}<small>条</small></span>
+            <span class="project-arrow">⌄</span>
+          </button>
+          <div class="project-children">
+            ${group.children
+              .map(
+                (child, childIndex) => `
+                  <button class="project-child-row ${selectedProject === child.name ? "active" : ""}" data-sub-project="${child.name}">
+                    <span>${childIndex + 1}</span>
+                    <strong>${child.name}</strong>
+                    <i style="width:${(child.count / group.count) * 100}%"></i>
+                    <em>${child.count} 条</em>
+                  </button>
+                `,
+              )
+              .join("")}
+          </div>
+        </article>
       `;
     })
     .join("");
+}
+
+function projectGroups(source) {
+  const byRoot = new Map();
+  source.forEach((task) => {
+    const root = task.rootProject || task.project || "未归类";
+    const child = task.subProject || task.project || root;
+    if (!byRoot.has(root)) byRoot.set(root, { root, count: 0, children: new Map() });
+    const group = byRoot.get(root);
+    group.count += 1;
+    group.children.set(child, (group.children.get(child) || 0) + 1);
+  });
+  return [...byRoot.values()]
+    .map((group) => ({
+      ...group,
+      children: [...group.children.entries()]
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+    }))
+    .sort((a, b) => b.count - a.count || a.root.localeCompare(b.root));
 }
 
 function renderHeartbeat() {
@@ -374,7 +424,7 @@ function renderCalendar() {
 
 function renderInsights() {
   const dayEntry = entriesByCount(countBy("date"), 1)[0];
-  const projectEntry = entriesByCount(countBy("project"), 1)[0];
+  const projectEntry = entriesByCount(countBy("rootProject"), 1)[0];
   const filtered = getFilteredTasks();
   if (!dayEntry || !projectEntry || !members.length) return;
   document.querySelector("#peakInsight").textContent = `${formatDate(dayEntry[0])} · ${dayEntry[1]} 条`;
@@ -427,7 +477,7 @@ function copySummary() {
       const dayTasks = tasks.filter((task) => task.member === member.name && task.date === date);
       if (!dayTasks.length) return;
       memberLines.push(`${label} ${weekName}`);
-      dayTasks.forEach((task) => memberLines.push(`- ${task.project}｜${task.name}`));
+      dayTasks.forEach((task) => memberLines.push(`- ${task.rootProject || task.project} / ${task.project}｜${task.name}`));
     });
     return memberLines.concat("");
   });
@@ -498,9 +548,22 @@ projectFilters.addEventListener("click", (event) => {
 });
 
 projectOverviewList.addEventListener("click", (event) => {
-  const row = event.target.closest("[data-project]");
-  if (!row) return;
-  selectedProject = selectedProject === row.dataset.project ? "全部" : row.dataset.project;
+  const child = event.target.closest("[data-sub-project]");
+  if (child) {
+    selectedProject = selectedProject === child.dataset.subProject ? "全部" : child.dataset.subProject;
+    render();
+    return;
+  }
+
+  const root = event.target.closest("[data-root-project]");
+  if (!root) return;
+  const project = root.dataset.rootProject;
+  if (expandedRootProjects.has(project)) {
+    expandedRootProjects.delete(project);
+  } else {
+    expandedRootProjects.add(project);
+  }
+  selectedProject = selectedProject === project ? "全部" : project;
   render();
 });
 

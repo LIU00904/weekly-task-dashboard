@@ -146,14 +146,62 @@ function linkedRecordIds(fields) {
   return [...ids];
 }
 
-function normalizeTask(record, parent = {}) {
+function recordIdsFromValue(value) {
+  const ids = new Set();
+  const visit = (item) => {
+    if (!item) return;
+    if (typeof item === "string" && item.startsWith("rec")) ids.add(item);
+    if (Array.isArray(item)) item.forEach(visit);
+    if (typeof item === "object") {
+      if (typeof item.record_id === "string") ids.add(item.record_id);
+      if (Array.isArray(item.record_ids)) item.record_ids.forEach(visit);
+    }
+  };
+  visit(value);
+  return [...ids];
+}
+
+function buildProjectLookup(records = []) {
+  const projects = new Map();
+  for (const record of records) {
+    const fields = record.fields || {};
+    const name = toText(pick(fields, [/^项目名称$/, /^项目$/, /^名称$/, /^name$/i])).trim();
+    if (!name || /\btbl[a-zA-Z0-9]+\b|\btext\b/i.test(name)) continue;
+    const parentId = recordIdsFromValue(pick(fields, [/父记录/, /父级/, /上级/, /parent/i]))[0] || "";
+    projects.set(record.record_id, { id: record.record_id, name, parentId });
+  }
+
+  const rootFor = (id, seen = new Set()) => {
+    const current = projects.get(id);
+    if (!current) return null;
+    if (!current.parentId || seen.has(current.parentId) || !projects.has(current.parentId)) return current;
+    seen.add(id);
+    return rootFor(current.parentId, seen) || current;
+  };
+
+  const lookup = new Map();
+  for (const project of projects.values()) {
+    const root = rootFor(project.id);
+    lookup.set(project.id, {
+      ...project,
+      rootId: root?.id || project.id,
+      rootName: root?.name || project.name,
+    });
+  }
+  return lookup;
+}
+
+function normalizeTask(record, parent = {}, projectLookup = new Map()) {
   const fields = record.fields || {};
   const taskName =
     toText(pick(fields, [/^任务$/, /任务名称/, /工作内容/, /事项/, /内容/, /^name$/i])) ||
     toText(Object.values(fields)[0]);
   const date = toDate(pick(fields, [/^开始时间$/, /开始日期/, /任务日期/, /日期/, /^date$/i])) || parent.date || "";
   const member = toText(pick(fields, [/成员/, /负责人/, /执行人/, /人员/, /姓名/, /汇报人/, /^member$/i])) || parent.member || "";
-  let project = toText(pick(fields, [/^所属项目$/, /^项目$/, /项目名称/, /客户/, /品牌/, /^project$/i])).trim() || parent.project || "";
+  const projectValue = pick(fields, [/^所属项目$/, /^项目$/, /项目名称/, /客户/, /品牌/, /^project$/i]);
+  const projectId = recordIdsFromValue(projectValue)[0] || parent.projectId || "";
+  const projectInfo = projectId ? projectLookup.get(projectId) : null;
+  let project = projectInfo?.name || toText(projectValue).trim() || parent.project || "";
 
   if (!project && taskName) {
     const withoutDate = taskName.replace(/^\d{1,2}\.\d{1,2}\s*/, "");
@@ -161,10 +209,16 @@ function normalizeTask(record, parent = {}) {
   }
 
   if (!taskName || !date || !member) return null;
+  const rootProject = projectInfo?.rootName || parent.rootProject || project || "未归类";
+  const subProject = project || parent.subProject || rootProject;
   return {
     date,
     member,
-    project: (project || "未归类").trim(),
+    project: subProject.trim(),
+    subProject: subProject.trim(),
+    rootProject: rootProject.trim(),
+    projectId,
+    rootProjectId: projectInfo?.rootId || projectId || "",
     name: taskName.replace(/\s+/g, " ").trim(),
     sourceRecordId: record.record_id,
   };
@@ -243,14 +297,18 @@ async function main() {
   let tableData = [];
   let mainTable = null;
   let taskTable = null;
+  let projectTable = null;
 
   if (taskTableId) {
-    const [fields, records] = await Promise.all([
+    const [fields, records, projectFields, projectRecords] = await Promise.all([
       listAll(token, appToken, `/tables/${taskTableId}/fields`),
       listAll(token, appToken, `/tables/${taskTableId}/records`),
+      listAll(token, appToken, `/tables/${tableId}/fields`),
+      listAll(token, appToken, `/tables/${tableId}/records`),
     ]);
     taskTable = { table: { table_id: taskTableId }, fields, records };
-    tableData = [taskTable];
+    projectTable = { table: { table_id: tableId }, fields: projectFields, records: projectRecords };
+    tableData = [taskTable, projectTable];
   } else {
     const tables = await listAll(token, appToken, "/tables");
 
@@ -261,6 +319,7 @@ async function main() {
     }
 
     mainTable = tableData.find((data) => data.table.table_id === tableId);
+    projectTable = mainTable;
     taskTable = tableData.find((data) => {
       const names = data.fields.map((field) => field.field_name);
       return names.includes("任务") && names.includes("开始时间") && names.includes("任务执行人");
@@ -272,16 +331,17 @@ async function main() {
     for (const record of data.records) recordById.set(record.record_id, record);
   }
   const week = currentWeekRange();
+  const projectLookup = buildProjectLookup(projectTable?.records || []);
   const candidates = [];
 
   if (taskTable) {
     for (const record of taskTable.records) {
-      const normalized = normalizeTask(record);
+      const normalized = normalizeTask(record, {}, projectLookup);
       if (normalized && normalized.date >= week.start && normalized.date <= week.end) pushExpandedTask(candidates, normalized);
     }
   } else if (mainTable) {
     for (const record of mainTable.records) {
-    const parent = normalizeTask(record) || {
+    const parent = normalizeTask(record, {}, projectLookup) || {
       date: toDate(pick(record.fields, [/周报日期/, /^日期$/, /date/i])),
       member: toText(pick(record.fields, [/成员/, /负责人/, /姓名/, /汇报人/])),
       project: toText(pick(record.fields, [/项目/, /客户/, /品牌/])),
@@ -291,13 +351,13 @@ async function main() {
     if (links.length) {
       links.forEach((id) => {
         const linked = recordById.get(id);
-        const normalized = linked ? normalizeTask(linked, parent) : null;
+        const normalized = linked ? normalizeTask(linked, parent, projectLookup) : null;
         if (normalized) pushExpandedTask(candidates, normalized);
       });
       return;
     }
 
-    const normalized = normalizeTask(record);
+    const normalized = normalizeTask(record, {}, projectLookup);
     if (normalized) pushExpandedTask(candidates, normalized);
   }
   }
