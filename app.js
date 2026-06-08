@@ -85,11 +85,6 @@ const projectOverviewList = document.querySelector("#projectOverviewList");
 const avgTasks = document.querySelector("#avgTasks");
 const maxTasks = document.querySelector("#maxTasks");
 const activeDays = document.querySelector("#activeDays");
-const activeLanyard = document.querySelector("#activeLanyard");
-const lanyardAvatar = document.querySelector("#lanyardAvatar");
-const lanyardName = document.querySelector("#lanyardName");
-const lanyardMeta = document.querySelector("#lanyardMeta");
-const lanyardTag = document.querySelector("#lanyardTag");
 
 function localIsoDate(date) {
   const year = date.getFullYear();
@@ -253,29 +248,6 @@ function memberInitial(name) {
   return name.slice(0, 1);
 }
 
-function topProjectForMember(memberName) {
-  return entriesByCount(countBy("rootProject", tasks.filter((task) => task.member === memberName)), 1)[0]?.[0] || "全部项目";
-}
-
-function renderActiveLanyard() {
-  if (!members.length) {
-    activeLanyard.hidden = true;
-    return;
-  }
-  const member = members[activeIndex];
-  const filtered = getFilteredTasks();
-  const topProject = topProjectForMember(member.name);
-  activeLanyard.hidden = false;
-  lanyardAvatar.textContent = memberInitial(member.name);
-  lanyardName.textContent = member.name;
-  lanyardMeta.textContent = `${filtered.length} 条任务 · ${new Set(filtered.map((task) => task.date)).size} 个工作日`;
-  lanyardTag.textContent = topProject;
-  activeLanyard.style.setProperty("--lanyard-color", projectColors[topProject] || "#2f6bff");
-  activeLanyard.classList.remove("swing-in");
-  void activeLanyard.offsetWidth;
-  activeLanyard.classList.add("swing-in");
-}
-
 function renderMembers() {
   memberList.innerHTML = "";
   if (!members.length) {
@@ -283,7 +255,7 @@ function renderMembers() {
     return;
   }
   members.forEach((member, index) => {
-    const topProject = topProjectForMember(member.name);
+    const topProject = entriesByCount(countBy("rootProject", tasks.filter((task) => task.member === member.name)), 1)[0]?.[0] || "-";
     const button = document.createElement("button");
     button.className = `member-tab ${index === activeIndex ? "active" : ""}`;
     button.innerHTML = `
@@ -515,7 +487,6 @@ function copySummary() {
 function render() {
   renderWeekSwitcher();
   renderMembers();
-  renderActiveLanyard();
   renderProjectFilters();
   renderCalendar();
   renderProjectOverview();
