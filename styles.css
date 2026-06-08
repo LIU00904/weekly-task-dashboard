@@ -433,24 +433,28 @@ h2 {
 .project-system-row {
   width: 100%;
   text-align: left;
-  border: 1px solid rgba(210, 225, 248, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.62);
   border-radius: 22px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(248, 252, 255, 0.62)),
-    radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--dot) 22%, transparent), transparent 160px);
-  box-shadow: 0 18px 46px rgba(69, 91, 130, 0.09);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.2)),
+    radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--dot) 20%, transparent), transparent 150px),
+    radial-gradient(circle at 100% 100%, rgba(255, 255, 255, 0.28), transparent 120px);
+  box-shadow: 0 18px 50px rgba(69, 91, 130, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
   overflow: hidden;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease;
 }
 
 .project-system-row:hover,
 .project-system-row.active {
-  border-color: color-mix(in srgb, var(--dot) 34%, rgba(210, 225, 248, 0.82));
+  border-color: color-mix(in srgb, var(--dot) 38%, rgba(255, 255, 255, 0.78));
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(243, 249, 255, 0.7)),
-    radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--dot) 26%, transparent), transparent 170px);
-  transform: translateY(-1px);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.28)),
+    radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--dot) 28%, transparent), transparent 170px),
+    radial-gradient(circle at 100% 100%, rgba(255, 255, 255, 0.34), transparent 130px);
+  box-shadow: 0 24px 60px rgba(69, 91, 130, 0.12), 0 0 0 4px color-mix(in srgb, var(--dot) 8%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  transform: translateY(-2px);
 }
 
 .project-tree-root {
@@ -464,6 +468,7 @@ h2 {
   text-align: left;
   background: transparent;
   border: 0;
+  cursor: pointer;
 }
 
 .project-icon {
@@ -493,7 +498,7 @@ h2 {
 
 .project-system-main small {
   overflow: hidden;
-  color: var(--muted);
+  color: rgba(100, 116, 139, 0.82);
   font-size: 12px;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -503,7 +508,8 @@ h2 {
   height: 8px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgba(226, 232, 244, 0.72);
+  background: rgba(226, 232, 244, 0.46);
+  box-shadow: inset 0 1px 3px rgba(100, 116, 139, 0.06);
 }
 
 .project-meter i {
@@ -532,7 +538,8 @@ h2 {
   height: 22px;
   border-radius: 50%;
   color: var(--muted);
-  background: rgba(15, 23, 42, 0.04);
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   font-size: 18px;
   transition: transform 0.2s ease;
 }
@@ -545,7 +552,7 @@ h2 {
   display: none;
   margin: 0 12px 12px 52px;
   padding: 8px 0 4px 14px;
-  border-left: 1px dashed rgba(100, 116, 139, 0.25);
+  border-left: 1px dashed color-mix(in srgb, var(--dot) 28%, rgba(100, 116, 139, 0.18));
 }
 
 .project-tree-card.expanded .project-children {
@@ -563,9 +570,13 @@ h2 {
   padding: 8px 10px;
   color: var(--text);
   text-align: left;
-  border: 1px solid rgba(226, 232, 244, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.54);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.58);
+  background: rgba(255, 255, 255, 0.38);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
 }
 
 .project-child-row::before {
@@ -573,13 +584,14 @@ h2 {
   position: absolute;
   left: -15px;
   width: 12px;
-  border-top: 1px dashed rgba(100, 116, 139, 0.25);
+  border-top: 1px dashed color-mix(in srgb, var(--dot) 28%, rgba(100, 116, 139, 0.18));
 }
 
 .project-child-row:hover,
 .project-child-row.active {
-  background: color-mix(in srgb, var(--dot) 10%, rgba(255, 255, 255, 0.76));
-  border-color: color-mix(in srgb, var(--dot) 30%, rgba(226, 232, 244, 0.72));
+  background: color-mix(in srgb, var(--dot) 12%, rgba(255, 255, 255, 0.62));
+  border-color: color-mix(in srgb, var(--dot) 32%, rgba(255, 255, 255, 0.72));
+  transform: translateX(3px);
 }
 
 .project-child-row span {

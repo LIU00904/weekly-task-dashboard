@@ -312,7 +312,7 @@ function renderProjectOverview() {
             <span class="project-icon">${index + 1}</span>
             <span class="project-system-main">
               <strong>${group.root}</strong>
-              <small>${group.children.length} 个子项目 · 按任务热度排序</small>
+              <small>${group.children.length} 个子项目</small>
               <span class="project-meter"><i style="width:${(group.count / max) * 100}%"></i></span>
             </span>
             <span class="project-score">${group.count}<small>条</small></span>
