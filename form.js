@@ -14,6 +14,8 @@ const els = {
   memberHint: document.querySelector("#memberHint"),
   reloadBtn: document.querySelector("#reloadBtn"),
   selects: [document.querySelector("#projectLevel0"), document.querySelector("#projectLevel1"), document.querySelector("#projectLevel2")],
+  newRootProjectName: document.querySelector("#newRootProjectName"),
+  addRootProjectBtn: document.querySelector("#addRootProjectBtn"),
   newProjectName: document.querySelector("#newProjectName"),
   addProjectBtn: document.querySelector("#addProjectBtn"),
   taskForm: document.querySelector("#taskForm"),
@@ -91,6 +93,21 @@ function renderProjectSelects(changedLevel = -1) {
   for (let level = Math.max(changedLevel + 1, 1); level < els.selects.length; level += 1) {
     fillSelect(level, els.selects[level - 1].value);
   }
+  updateReportPreview();
+}
+
+function selectProjectPath(projectId) {
+  const path = [];
+  let current = state.projects.find((project) => project.id === projectId);
+  while (current) {
+    path.unshift(current.id);
+    current = state.projects.find((project) => project.id === current.parentId);
+  }
+  renderProjectSelects();
+  path.slice(0, els.selects.length).forEach((id, index) => {
+    els.selects[index].value = id;
+    renderProjectSelects(index);
+  });
   updateReportPreview();
 }
 
@@ -214,6 +231,19 @@ els.collaboratorList.addEventListener("click", (event) => {
   }
   renderCollaborators();
   updateReportPreview();
+});
+
+els.addRootProjectBtn.addEventListener("click", async () => {
+  const name = els.newRootProjectName.value.trim();
+  if (!name) return showResult("error", "先写一个一级项目名称。");
+  const created = await api("/api/projects", {
+    method: "POST",
+    body: JSON.stringify({ name, parentId: "" }),
+  });
+  state.projects.push(created);
+  els.newRootProjectName.value = "";
+  selectProjectPath(created.id);
+  showResult("success", `已新增一级项目：${created.name}`);
 });
 
 els.addProjectBtn.addEventListener("click", async () => {

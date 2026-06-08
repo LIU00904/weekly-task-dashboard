@@ -290,6 +290,15 @@ textarea:focus {
   background: rgba(239, 246, 255, 0.62);
 }
 
+.root-project {
+  margin-top: 0;
+  margin-bottom: 18px;
+  border-style: solid;
+  background:
+    linear-gradient(135deg, rgba(47, 107, 255, 0.08), rgba(217, 251, 239, 0.5)),
+    rgba(255, 255, 255, 0.62);
+}
+
 .new-project button {
   padding: 0 20px;
   color: #0c4eb2;
