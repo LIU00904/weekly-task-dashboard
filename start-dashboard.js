@@ -319,6 +319,16 @@ function findMember(members, user) {
   );
 }
 
+function userFromMember(member) {
+  const account = (member.users || [])[0] || {};
+  return {
+    name: account.name || member.name,
+    en_name: account.en_name || account.enName || member.name,
+    open_id: account.id || account.open_id,
+    user_id: account.userId || account.user_id,
+  };
+}
+
 function sameValue(left, right) {
   if (left == null || right == null) return false;
   const a = String(left).trim();
@@ -368,7 +378,12 @@ async function handleApi(request, response, url) {
       const token = await getTenantToken();
       const data = await getFormData(token);
       const member = findMember(data.members, session.user);
-      sendJson(response, 200, { user: session.user, member, projects: data.projects });
+      sendJson(response, 200, {
+        user: session.user,
+        member,
+        members: data.members.map((item) => ({ id: item.id, name: item.name })),
+        projects: data.projects,
+      });
       return true;
     }
 
@@ -401,20 +416,35 @@ async function handleApi(request, response, url) {
       const member = findMember(data.members, session.user);
       if (!member) return sendJson(response, 400, { error: `没有在成员表里找到 ${session.user.name} 对应账号` }), true;
 
-      const reportId = await findOrCreateWeeklyReport(token, session.user, member, projectId, taskDate);
+      const collaboratorIds = Array.isArray(body.collaboratorIds) ? body.collaboratorIds.map(String) : [];
+      const collaborators = collaboratorIds
+        .map((id) => data.members.find((item) => item.id === id))
+        .filter((item) => item && item.id !== member.id);
+      const assignees = [member, ...collaborators];
+      const missingAccounts = collaborators.filter((item) => !userFromMember(item).open_id);
+      if (missingAccounts.length) {
+        return sendJson(response, 400, { error: `协作成员 ${missingAccounts.map((item) => item.name).join("、")} 没有绑定飞书账号` }), true;
+      }
+
+      const reportIds = [];
+      for (const assignee of assignees) {
+        const reportUser = assignee.id === member.id ? session.user : userFromMember(assignee);
+        const reportId = await findOrCreateWeeklyReport(token, reportUser, assignee, projectId, taskDate);
+        if (reportId && !reportIds.includes(reportId)) reportIds.push(reportId);
+      }
       const fields = {
         任务: taskName,
         所属项目: [projectId],
         状态: body.status || "已完成",
         开始时间: dateToTimestamp(taskDate),
-        任务执行人: [member.id],
-        "📝  周报": reportId ? [reportId] : [],
+        任务执行人: assignees.map((item) => item.id),
+        "📝  周报": reportIds,
       };
       if (body.deadline) fields["截止时间"] = dateToTimestamp(body.deadline);
       if (body.note) fields["备注"] = String(body.note);
       const created = await bitable(token, data.taskTable, "/records", { method: "POST", body: { fields } });
       runSync();
-      sendJson(response, 200, { recordId: created.record?.record_id, reportId, member: member.name });
+      sendJson(response, 200, { recordId: created.record?.record_id, reportIds, members: assignees.map((item) => item.name) });
       return true;
     }
   } catch (error) {

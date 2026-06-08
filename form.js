@@ -2,6 +2,8 @@ const state = {
   user: null,
   member: null,
   projects: [],
+  members: [],
+  collaboratorIds: new Set(),
 };
 
 const els = {
@@ -21,6 +23,7 @@ const els = {
   deadline: document.querySelector("#deadline"),
   note: document.querySelector("#note"),
   reportPreview: document.querySelector("#reportPreview"),
+  collaboratorList: document.querySelector("#collaboratorList"),
   submitBtn: document.querySelector("#submitBtn"),
   submitLabel: document.querySelector("#submitBtn .submit-label"),
 };
@@ -92,32 +95,67 @@ function renderProjectSelects(changedLevel = -1) {
 }
 
 function renderUser() {
-  if (!state.user) return;
-  const avatar = state.user.avatar_url
-    ? `<img src="${state.user.avatar_url}" alt="${state.user.name}" />`
-    : state.user.name.slice(0, 1);
+  const name = state.user?.name || "未登录";
+  const avatar = state.user?.avatar_url
+    ? `<img src="${state.user.avatar_url}" alt="${name}" />`
+    : name.slice(0, 1);
   els.userCard.innerHTML = `
-    <div class="avatar">${avatar}</div>
-    <div>
-      <strong>${state.user.name}</strong>
-      <span>${state.member ? `已匹配成员：${state.member.name}` : "等待匹配成员表"}</span>
+    <div class="lanyard-band"></div>
+    <div class="lanyard-clip"></div>
+    <div class="lanyard-badge">
+      <div class="lanyard-shine"></div>
+      <div class="avatar">${avatar}</div>
+      <div>
+        <span>${state.member ? "已匹配飞书成员" : "等待匹配成员表"}</span>
+        <strong>${name}</strong>
+        <small>${state.member ? state.member.name : "Weekly form"}</small>
+      </div>
     </div>
   `;
+  els.userCard.classList.remove("swing-in");
+  void els.userCard.offsetWidth;
+  els.userCard.classList.add("swing-in");
+}
+
+function renderCollaborators() {
+  const currentId = state.member?.id;
+  const candidates = state.members.filter((member) => member.id && member.id !== currentId && member.name);
+  if (!candidates.length) {
+    els.collaboratorList.innerHTML = `<div class="collab-empty">暂无可选协作成员</div>`;
+    return;
+  }
+  els.collaboratorList.innerHTML = candidates
+    .map(
+      (member) => `
+        <button class="collab-chip ${state.collaboratorIds.has(member.id) ? "active" : ""}" type="button" data-member-id="${member.id}">
+          <span>${member.name.slice(0, 1)}</span>
+          <strong>${member.name}</strong>
+        </button>
+      `,
+    )
+    .join("");
 }
 
 function updateReportPreview() {
   const date = els.taskDate.value || todayIso();
   const monday = mondayOf(date);
   const name = state.member?.name || state.user?.name || "当前成员";
-  els.reportPreview.textContent = `将关联周报：${name} + ${formatDate(monday)}；项目：${selectedProjectName()}`;
+  const collaboratorNames = state.members
+    .filter((member) => state.collaboratorIds.has(member.id))
+    .map((member) => member.name);
+  const names = [name, ...collaboratorNames].join("、");
+  els.reportPreview.textContent = `将关联周报：${names} + ${formatDate(monday)}；项目：${selectedProjectName()}`;
 }
 
 async function loadOptions() {
   const data = await api("/api/form-options");
   state.user = data.user;
   state.member = data.member;
+  state.members = data.members || [];
+  state.collaboratorIds = new Set([...state.collaboratorIds].filter((id) => state.members.some((member) => member.id === id)));
   state.projects = data.projects || [];
   renderUser();
+  renderCollaborators();
   els.memberHint.textContent = state.member
     ? `已根据飞书账号自动匹配：${state.member.name}`
     : "没有在成员表里匹配到当前账号，提交前需要先把账号加入成员表。";
@@ -165,6 +203,19 @@ els.selects.forEach((select, index) => {
 els.taskDate.addEventListener("change", updateReportPreview);
 els.reloadBtn.addEventListener("click", loadOptions);
 
+els.collaboratorList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-member-id]");
+  if (!button) return;
+  const id = button.dataset.memberId;
+  if (state.collaboratorIds.has(id)) {
+    state.collaboratorIds.delete(id);
+  } else {
+    state.collaboratorIds.add(id);
+  }
+  renderCollaborators();
+  updateReportPreview();
+});
+
 els.addProjectBtn.addEventListener("click", async () => {
   const name = els.newProjectName.value.trim();
   if (!name) return showResult("error", "先写一个项目/分支名称。");
@@ -191,10 +242,11 @@ els.taskForm.addEventListener("submit", async (event) => {
     taskDate: els.taskDate.value,
     deadline: els.deadline.value,
     note: els.note.value.trim(),
+    collaboratorIds: [...state.collaboratorIds],
   };
   try {
     setSubmitting(true, "正在写入飞书...");
-    showResult("success", "正在提交，请稍等。系统会自动关联项目、成员和本周周报。");
+    showResult("success", "正在提交，请稍等。系统会自动关联项目、成员、协作成员和对应周报。");
     const data = await api("/api/tasks", {
       method: "POST",
       body: JSON.stringify(payload),
@@ -202,7 +254,7 @@ els.taskForm.addEventListener("submit", async (event) => {
     els.taskName.value = "";
     els.note.value = "";
     setSubmitSuccess();
-    showResult("success", `提交成功：已写入任务，并关联到 ${data.member} 的本周周报。`);
+    showResult("success", `提交成功：已写入任务，并关联到 ${data.members.join("、")} 的本周周报。`);
     setTimeout(() => setSubmitting(false), 1500);
   } catch (error) {
     setSubmitting(false);

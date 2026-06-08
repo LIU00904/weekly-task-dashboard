@@ -14,11 +14,17 @@
           <h1>周报任务填报</h1>
           <p>自动识别飞书账号，按项目层级归档，并关联到“人物名 + 本周周一日期”的周报。</p>
         </div>
-        <div class="user-card" id="userCard">
-          <div class="avatar">?</div>
-          <div>
-            <strong>未登录</strong>
-            <span>请先用飞书账号进入</span>
+        <div class="user-card lanyard-card" id="userCard">
+          <div class="lanyard-band"></div>
+          <div class="lanyard-clip"></div>
+          <div class="lanyard-badge">
+            <div class="lanyard-shine"></div>
+            <div class="avatar">?</div>
+            <div>
+              <span>请先用飞书账号进入</span>
+              <strong>未登录</strong>
+              <small>Weekly form</small>
+            </div>
           </div>
         </div>
       </section>
@@ -63,6 +69,14 @@
             <span>任务内容</span>
             <input id="taskName" type="text" placeholder="例如：6.5 华硕发稿*5" required />
           </label>
+
+          <section class="collab-section" aria-label="协作成员">
+            <div>
+              <span>协作成员</span>
+              <small>可选；选择后会同时关联任务执行人和对应周报</small>
+            </div>
+            <div class="collaborator-list" id="collaboratorList"></div>
+          </section>
 
           <div class="grid">
             <label>
