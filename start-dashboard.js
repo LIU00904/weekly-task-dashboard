@@ -23,6 +23,8 @@ const types = {
 };
 
 let syncing = false;
+let formDataCache = null;
+const formDataCacheTtl = Number(process.env.FORM_DATA_CACHE_TTL_MS || 10 * 60 * 1000);
 
 function loadEnv(file = ".env") {
   const envPath = path.join(root, file);
@@ -274,6 +276,9 @@ function linkedIds(value) {
 }
 
 async function getFormData(token) {
+  if (formDataCache && Date.now() - formDataCache.createdAt < formDataCacheTtl) {
+    return formDataCache.data;
+  }
   const projectTable = getEnv("FEISHU_TABLE_ID");
   const taskTable = process.env.FEISHU_TASK_TABLE_ID || "tbloya8aPRt4mRZM";
   const memberTable = process.env.FEISHU_MEMBER_TABLE_ID || "tblCEEhA1CP5CHDi";
@@ -290,7 +295,13 @@ async function getFormData(token) {
     name: toText(record.fields["成员"] || record.fields["账号"]).trim(),
     users: record.fields["账号"]?.users || record.fields["账号"] || [],
   }));
-  return { projectTable, taskTable, memberTable, projects, members };
+  const data = { projectTable, taskTable, memberTable, projects, members };
+  formDataCache = { data, createdAt: Date.now() };
+  return data;
+}
+
+function clearFormDataCache() {
+  formDataCache = null;
 }
 
 function findMember(members, user) {
@@ -371,6 +382,7 @@ async function handleApi(request, response, url) {
       const fields = { 项目名称: name };
       if (body.parentId) fields["父记录 2"] = [body.parentId];
       const created = await bitable(token, getEnv("FEISHU_TABLE_ID"), "/records", { method: "POST", body: { fields } });
+      clearFormDataCache();
       sendJson(response, 200, { id: created.record?.record_id, name, parentId: body.parentId || "" });
       return true;
     }
