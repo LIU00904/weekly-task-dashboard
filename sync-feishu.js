@@ -25,7 +25,20 @@ function required(name) {
 }
 
 async function request(url, options = {}) {
-  const response = await fetch(url, options);
+  const timeoutMs = Number(process.env.FEISHU_REQUEST_TIMEOUT_MS || 20000);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  let response;
+  try {
+    response = await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (error.name === "AbortError") {
+      throw new Error(`Feishu API timeout after ${timeoutMs}ms at ${url}`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
   const text = await response.text();
   let payload;
   try {
@@ -225,27 +238,37 @@ async function main() {
   const output = process.env.FEISHU_OUTPUT || "data.json";
 
   const token = await getTenantToken(appId, appSecret);
-  const tables = await listAll(token, appToken, "/tables");
+  let tableData = [];
+  let mainTable = null;
+  let taskTable = null;
 
-  const tableData = [];
-  for (const table of tables) {
-    const fields = await listAll(token, appToken, `/tables/${table.table_id}/fields`);
-    const records = await listAll(token, appToken, `/tables/${table.table_id}/records`, table.table_id === tableId ? { view_id: viewId } : {});
-    tableData.push({ table, fields, records });
+  if (taskTableId) {
+    const [fields, records] = await Promise.all([
+      listAll(token, appToken, `/tables/${taskTableId}/fields`),
+      listAll(token, appToken, `/tables/${taskTableId}/records`),
+    ]);
+    taskTable = { table: { table_id: taskTableId }, fields, records };
+    tableData = [taskTable];
+  } else {
+    const tables = await listAll(token, appToken, "/tables");
+
+    for (const table of tables) {
+      const fields = await listAll(token, appToken, `/tables/${table.table_id}/fields`);
+      const records = await listAll(token, appToken, `/tables/${table.table_id}/records`, table.table_id === tableId ? { view_id: viewId } : {});
+      tableData.push({ table, fields, records });
+    }
+
+    mainTable = tableData.find((data) => data.table.table_id === tableId);
+    taskTable = tableData.find((data) => {
+      const names = data.fields.map((field) => field.field_name);
+      return names.includes("任务") && names.includes("开始时间") && names.includes("任务执行人");
+    });
   }
 
   const recordById = new Map();
   for (const data of tableData) {
     for (const record of data.records) recordById.set(record.record_id, record);
   }
-
-  const mainTable = tableData.find((data) => data.table.table_id === tableId);
-  const taskTable =
-    tableData.find((data) => data.table.table_id === taskTableId) ||
-    tableData.find((data) => {
-      const names = data.fields.map((field) => field.field_name);
-      return names.includes("任务") && names.includes("开始时间") && names.includes("任务执行人");
-    });
   const week = currentWeekRange();
   const candidates = [];
 

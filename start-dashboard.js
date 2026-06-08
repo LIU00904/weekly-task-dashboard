@@ -463,7 +463,7 @@ const server = http.createServer(async (request, response) => {
     const headers = {
       "Content-Type": types[path.extname(filePath)] || "application/octet-stream",
     };
-    if (path.basename(filePath) === "data.json") {
+    if ([".html", ".css", ".js"].includes(path.extname(filePath)) || path.basename(filePath) === "data.json") {
       headers["Cache-Control"] = "no-store";
     }
     send(response, 200, data, headers);

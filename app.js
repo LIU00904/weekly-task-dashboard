@@ -97,6 +97,14 @@ function dateFromIso(value) {
   return new Date(year, month - 1, day);
 }
 
+function assertLocalDateMath() {
+  const date = dateFromIso("2026-06-02");
+  const weekName = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][date.getDay()];
+  if (weekName !== "周二" || localIsoDate(date) !== "2026-06-02") {
+    throw new Error("Local date math is broken: 2026-06-02 must render as 周二.");
+  }
+}
+
 function startOfWeek(value) {
   const date = typeof value === "string" ? dateFromIso(value) : new Date(value);
   const day = date.getDay() || 7;
@@ -154,6 +162,7 @@ function refreshDerivedData() {
 }
 
 async function loadData() {
+  assertLocalDateMath();
   const previousWeekStart = weekOptions[activeWeekIndex]?.start;
   try {
     const response = await fetch(`./data.json?ts=${Date.now()}`, { cache: "no-store" });
