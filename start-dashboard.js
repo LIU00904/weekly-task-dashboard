@@ -4,6 +4,8 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const { spawn } = require("node:child_process");
 
+process.env.TZ = process.env.TZ || "Asia/Shanghai";
+
 const root = __dirname;
 const port = Number(process.env.PORT || 8765);
 const syncHour = Number(process.env.SYNC_HOUR || 9);

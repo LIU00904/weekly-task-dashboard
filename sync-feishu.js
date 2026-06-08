@@ -1,6 +1,8 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
+process.env.TZ = process.env.TZ || "Asia/Shanghai";
+
 const API = "https://open.feishu.cn/open-apis";
 
 function loadEnv(file = ".env") {
