@@ -164,8 +164,8 @@ function updateReportPreview() {
   els.reportPreview.textContent = `将关联周报：${names} + ${formatDate(monday)}；项目：${selectedProjectName()}`;
 }
 
-async function loadOptions() {
-  const data = await api("/api/form-options");
+async function loadOptions({ refresh = false } = {}) {
+  const data = await api(`/api/form-options${refresh ? "?refresh=1" : ""}`);
   state.user = data.user;
   state.member = data.member;
   state.members = data.members || [];
@@ -218,7 +218,7 @@ els.selects.forEach((select, index) => {
 });
 
 els.taskDate.addEventListener("change", updateReportPreview);
-els.reloadBtn.addEventListener("click", loadOptions);
+els.reloadBtn.addEventListener("click", () => loadOptions({ refresh: true }));
 
 els.collaboratorList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-member-id]");

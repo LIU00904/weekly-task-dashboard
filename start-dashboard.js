@@ -375,6 +375,7 @@ async function handleApi(request, response, url) {
     if (url.pathname === "/api/form-options") {
       const session = currentSession(request);
       if (!session) return sendJson(response, 401, { error: "请先用飞书登录" }), true;
+      if (url.searchParams.get("refresh") === "1") clearFormDataCache();
       const token = await getTenantToken();
       const data = await getFormData(token);
       const member = findMember(data.members, session.user);
