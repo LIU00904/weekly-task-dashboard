@@ -416,18 +416,14 @@ h2 {
 
 .top-overview {
   margin-bottom: 18px;
+  overflow: visible;
 }
 
 .project-overview-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-  gap: 12px;
-}
-
-.compact-overview {
-  max-height: 360px;
-  overflow: auto;
-  padding-right: 4px;
+  grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+  gap: 14px;
+  overflow: visible;
 }
 
 .project-system-row {
