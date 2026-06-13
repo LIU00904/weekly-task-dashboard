@@ -395,7 +395,7 @@ function renderCalendar() {
     const dayTasks = filtered.filter((task) => task.date === date);
     const card = document.createElement("article");
     card.className = "day-card";
-    const limit = compact ? 5 : 7;
+    const limit = compact ? 7 : 10;
     const visibleTasks = expanded || viewMode === "list" ? dayTasks : dayTasks.slice(0, limit);
     card.innerHTML = `
       <header class="day-head" data-date="${date}">

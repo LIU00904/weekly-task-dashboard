@@ -802,7 +802,7 @@ h2 {
 }
 
 .day-card {
-  min-height: 460px;
+  min-height: 720px;
   border: 1px solid var(--line);
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.92);
@@ -811,7 +811,7 @@ h2 {
 }
 
 .compact .day-card {
-  min-height: 320px;
+  min-height: 520px;
 }
 
 .list-mode .day-card {
@@ -846,7 +846,7 @@ h2 {
 .tasks {
   display: grid;
   gap: 7px;
-  max-height: 392px;
+  max-height: 640px;
   overflow: auto;
   padding: 10px;
 }
@@ -857,7 +857,7 @@ h2 {
 }
 
 .compact .tasks {
-  max-height: 244px;
+  max-height: 450px;
 }
 
 .task-card {
