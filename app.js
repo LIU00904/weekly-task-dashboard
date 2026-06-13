@@ -359,10 +359,11 @@ function projectGroups(source) {
 }
 
 function renderHeartbeat() {
+  const filtered = getFilteredTasks();
   const counts = weekDays.map(([date, weekName, label]) => ({
     date,
     label,
-    count: weekFilteredTasks().filter((task) => task.date === date).length,
+    count: filtered.filter((task) => task.date === date).length,
   }));
   const peak = counts.reduce((best, item) => (item.count > best.count ? item : best), counts[0]);
   avgTasks.textContent = Math.round(counts.reduce((sum, item) => sum + item.count, 0) / 7);
