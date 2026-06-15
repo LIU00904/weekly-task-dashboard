@@ -114,7 +114,17 @@ function startOfWeek(value) {
   return localIsoDate(date);
 }
 
-function buildWeekOptions(sourceTasks) {
+function buildWeekOptions(sourceTasks, sourceWeeks = []) {
+  if (Array.isArray(sourceWeeks) && sourceWeeks.length) {
+    return sourceWeeks.map((week, index, arr) => {
+      const relative = index === arr.length - 1 ? "本周" : index === arr.length - 2 ? "上周" : index === arr.length - 3 ? "上上周" : "";
+      return {
+        start: week.start,
+        end: week.end,
+        label: relative ? `${relative} ${week.label}` : week.label,
+      };
+    });
+  }
   const starts = [...new Set(sourceTasks.map((task) => startOfWeek(task.date)))].sort();
   return starts.map((start, index, arr) => {
     const startDate = dateFromIso(start);
@@ -166,11 +176,13 @@ function refreshDerivedData() {
 async function loadData() {
   assertLocalDateMath();
   const previousWeekStart = weekOptions[activeWeekIndex]?.start;
+  let sourceWeeks = [];
   try {
     const response = await fetch(`./data.json?ts=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) throw new Error("No data.json");
     const payload = await response.json();
     if (!Array.isArray(payload.tasks) || !payload.tasks.length) throw new Error("data.json has no tasks");
+    sourceWeeks = payload.source?.weeks || [];
     allTasks = payload.tasks.map((task) => ({
       date: task.date,
       member: task.member,
@@ -182,7 +194,7 @@ async function loadData() {
   } catch (error) {
     allTasks = [...fallbackTasks];
   }
-  weekOptions = buildWeekOptions(allTasks);
+  weekOptions = buildWeekOptions(allTasks, sourceWeeks);
   const restoredWeekIndex = weekOptions.findIndex((week) => week.start === previousWeekStart);
   activeWeekIndex = restoredWeekIndex >= 0 ? restoredWeekIndex : Math.max(0, weekOptions.length - 1);
   refreshDerivedData();
