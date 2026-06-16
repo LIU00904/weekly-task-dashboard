@@ -281,7 +281,6 @@ textarea:focus {
 
 .new-project {
   display: grid;
-  grid-template-columns: 1fr auto;
   gap: 12px;
   margin-top: 16px;
   padding: 14px;
@@ -291,6 +290,7 @@ textarea:focus {
 }
 
 .root-project {
+  grid-template-columns: 1fr auto;
   margin-top: 0;
   margin-bottom: 18px;
   border-style: solid;

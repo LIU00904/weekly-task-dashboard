@@ -17,7 +17,6 @@ const els = {
   newRootProjectName: document.querySelector("#newRootProjectName"),
   addRootProjectBtn: document.querySelector("#addRootProjectBtn"),
   newProjectName: document.querySelector("#newProjectName"),
-  addProjectBtn: document.querySelector("#addProjectBtn"),
   taskForm: document.querySelector("#taskForm"),
   taskName: document.querySelector("#taskName"),
   status: document.querySelector("#status"),
@@ -67,6 +66,10 @@ function selectedProjectId() {
 function selectedProjectName() {
   const id = selectedProjectId();
   return state.projects.find((project) => project.id === id)?.name || "未选择项目";
+}
+
+function pendingProjectName() {
+  return els.newProjectName.value.trim();
 }
 
 function childrenOf(parentId) {
@@ -161,7 +164,18 @@ function updateReportPreview() {
     .filter((member) => state.collaboratorIds.has(member.id))
     .map((member) => member.name);
   const names = [name, ...collaboratorNames].join("、");
-  els.reportPreview.textContent = `将关联周报：${names} + ${formatDate(monday)}；项目：${selectedProjectName()}`;
+  const pendingName = pendingProjectName();
+  const projectText = pendingName ? `${selectedProjectName()} / ${pendingName}（提交时自动创建子分支）` : selectedProjectName();
+  els.reportPreview.textContent = `将关联周报：${names} + ${formatDate(monday)}；项目：${projectText}`;
+}
+
+async function createProject(name, parentId = "") {
+  const created = await api("/api/projects", {
+    method: "POST",
+    body: JSON.stringify({ name, parentId }),
+  });
+  state.projects.push(created);
+  return created;
 }
 
 async function loadOptions({ refresh = false } = {}) {
@@ -218,6 +232,7 @@ els.selects.forEach((select, index) => {
 });
 
 els.taskDate.addEventListener("change", updateReportPreview);
+els.newProjectName.addEventListener("input", updateReportPreview);
 els.reloadBtn.addEventListener("click", () => loadOptions({ refresh: true }));
 
 els.collaboratorList.addEventListener("click", (event) => {
@@ -236,35 +251,18 @@ els.collaboratorList.addEventListener("click", (event) => {
 els.addRootProjectBtn.addEventListener("click", async () => {
   const name = els.newRootProjectName.value.trim();
   if (!name) return showResult("error", "先写一个一级项目名称。");
-  const created = await api("/api/projects", {
-    method: "POST",
-    body: JSON.stringify({ name, parentId: "" }),
-  });
-  state.projects.push(created);
+  const created = await createProject(name);
   els.newRootProjectName.value = "";
   selectProjectPath(created.id);
   showResult("success", `已新增一级项目：${created.name}`);
 });
 
-els.addProjectBtn.addEventListener("click", async () => {
-  const name = els.newProjectName.value.trim();
-  if (!name) return showResult("error", "先写一个项目/分支名称。");
-  const parentId = selectedProjectId();
-  const created = await api("/api/projects", {
-    method: "POST",
-    body: JSON.stringify({ name, parentId }),
-  });
-  state.projects.push(created);
-  els.newProjectName.value = "";
-  renderProjectSelects();
-  showResult("success", `已新增：${created.name}`);
-});
-
 els.taskForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (els.submitBtn.disabled) return;
-  const projectId = selectedProjectId();
+  let projectId = selectedProjectId();
   if (!projectId) return showResult("error", "先选择一个项目或分支。");
+  const newBranchName = pendingProjectName();
   const payload = {
     projectId,
     taskName: els.taskName.value.trim(),
@@ -276,15 +274,24 @@ els.taskForm.addEventListener("submit", async (event) => {
   };
   try {
     setSubmitting(true, "正在写入飞书...");
-    showResult("success", "正在提交，请稍等。系统会自动关联项目、成员、协作成员和对应周报。");
+    if (newBranchName) {
+      showResult("success", `正在创建子分支「${newBranchName}」，然后写入任务...`);
+      const created = await createProject(newBranchName, projectId);
+      projectId = created.id;
+      payload.projectId = projectId;
+    } else {
+      showResult("success", "正在提交，请稍等。系统会自动关联项目、成员、协作成员和对应周报。");
+    }
     const data = await api("/api/tasks", {
       method: "POST",
       body: JSON.stringify(payload),
     });
     els.taskName.value = "";
+    els.newProjectName.value = "";
     els.note.value = "";
     setSubmitSuccess();
-    showResult("success", `提交成功：已写入任务，并关联到 ${data.members.join("、")} 的本周周报。`);
+    if (newBranchName) selectProjectPath(projectId);
+    showResult("success", `提交成功：已写入任务，并关联到 ${data.members.join("、")} 的本周周报。${newBranchName ? `已同步新增子分支「${newBranchName}」。` : ""}`);
     setTimeout(() => setSubmitting(false), 1500);
   } catch (error) {
     setSubmitting(false);
