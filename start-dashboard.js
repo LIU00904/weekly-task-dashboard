@@ -23,6 +23,7 @@ const types = {
 };
 
 let syncing = false;
+let lastSync = { status: "idle", startedAt: null, finishedAt: null, message: "" };
 let formDataCache = null;
 const formDataCacheTtl = Number(process.env.FORM_DATA_CACHE_TTL_MS || 10 * 60 * 1000);
 
@@ -46,9 +47,24 @@ loadEnv();
 function runSync() {
   if (syncing) return;
   syncing = true;
-  const child = spawn(process.execPath, ["sync-feishu.js"], { cwd: root, stdio: "inherit" });
-  child.on("exit", () => {
+  lastSync = { status: "running", startedAt: new Date().toISOString(), finishedAt: null, message: "" };
+  const child = spawn(process.execPath, ["sync-feishu.js"], { cwd: root, stdio: ["ignore", "pipe", "pipe"] });
+  let output = "";
+  const collect = (chunk) => {
+    const text = chunk.toString();
+    output = `${output}${text}`.slice(-1000);
+    process.stdout.write(text);
+  };
+  child.stdout.on("data", collect);
+  child.stderr.on("data", collect);
+  child.on("exit", (code) => {
     syncing = false;
+    lastSync = {
+      status: code === 0 ? "success" : "failed",
+      startedAt: lastSync.startedAt,
+      finishedAt: new Date().toISOString(),
+      message: output.trim().slice(-500),
+    };
   });
 }
 
@@ -511,7 +527,7 @@ async function handleAuth(request, response, url) {
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host}`);
   if (url.pathname === "/healthz") {
-    sendJson(response, 200, { ok: true });
+    sendJson(response, 200, { ok: true, dataReady: fs.existsSync(path.join(root, "data.json")), lastSync });
     return;
   }
   if (await handleAuth(request, response, url)) return;
