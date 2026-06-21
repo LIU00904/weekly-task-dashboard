@@ -1,53 +1,6 @@
-const fallbackTasks = [
-  { date: "2026-06-01", member: "辛味珈", project: "北大深圳研究生院GEO", name: "6.1 和北大最终确认合同" },
-  { date: "2026-06-01", member: "刘依晨", project: "招聘", name: "线上沟通 *10" },
-  { date: "2026-06-01", member: "郝奕菲", project: "招标文件处理", name: "杭州商旅运河招标" },
-  { date: "2026-06-01", member: "刘依晨", project: "太太乐发稿", name: "6.1 太太乐 发稿*5" },
-  { date: "2026-06-01", member: "刘依晨", project: "赏·会所发稿", name: "6.1 赏会所 发稿*5" },
-  { date: "2026-06-01", member: "辛味珈", project: "撰稿", name: "6.1哲库林撰稿8篇" },
-  { date: "2026-06-01", member: "刘依晨", project: "超级媒介", name: "超级媒介批量发稿对接" },
-  { date: "2026-06-01", member: "刘依晨", project: "招聘", name: "线上面试 刘鸿睿（准备二面）" },
-  { date: "2026-06-01", member: "郝奕菲", project: "哲库林监测", name: "61监测" },
-  { date: "2026-06-02", member: "郝奕菲", project: "投放", name: "亚洲龙发稿汇总" },
-  { date: "2026-06-02", member: "刘依晨", project: "太太乐发稿", name: "6.2 太太乐*10" },
-  { date: "2026-06-02", member: "刘依晨", project: "投放", name: "6.2 哲库林 媒体*2" },
-  { date: "2026-06-02", member: "郝奕菲", project: "太太乐发稿", name: "太太乐发稿汇总" },
-  { date: "2026-06-02", member: "梁伟安", project: "太太乐周报&发稿链接上传", name: "太太乐第【5】周周报" },
-  { date: "2026-06-02", member: "郝奕菲", project: "哲库林监测", name: "62监测" },
-  { date: "2026-06-02", member: "刘依晨", project: "华硕发稿", name: "6.2 华硕商城 *6" },
-  { date: "2026-06-02", member: "郝奕菲", project: "投放", name: "发稿汇总 荣放" },
-  { date: "2026-06-02", member: "郝奕菲", project: "投放", name: "哲库林发稿汇总" },
-  { date: "2026-06-02", member: "郝奕菲", project: "审稿会议", name: "62审稿会 会议纪要" },
-  { date: "2026-06-02", member: "梁伟安", project: "审稿会议", name: "审稿会（华硕 哲库林 一丰）" },
-  { date: "2026-06-02", member: "辛味珈", project: "审稿会议", name: "审稿会（华硕 哲库林 一丰）" },
-  { date: "2026-06-02", member: "郝奕菲", project: "审稿会议", name: "审稿会（华硕 哲库林 一丰）" },
-  { date: "2026-06-02", member: "刘依晨", project: "审稿会议", name: "审稿会（华硕 哲库林 一丰）" },
-  { date: "2026-06-02", member: "刘依晨", project: "赏·会所发稿", name: "会所 发稿汇总" },
-  { date: "2026-06-02", member: "梁伟安", project: "华硕写稿", name: "华硕写稿*25" },
-  { date: "2026-06-02", member: "辛味珈", project: "商务协商", name: "6.2 和一丰深演掰扯" },
-  { date: "2026-06-02", member: "辛味珈", project: "撰稿", name: "6.2 修改荣放内容" },
-  { date: "2026-06-02", member: "辛味珈", project: "撰稿", name: "6.2 修改哲库林稿件" },
-  { date: "2026-06-02", member: "辛味珈", project: "招聘", name: "6.2 线下面试1人" },
-  { date: "2026-06-02", member: "刘依晨", project: "剪辑", name: "视频调色 *2" },
-  { date: "2026-06-03", member: "辛味珈", project: "撰稿", name: "6.3 一丰亚洲龙第五批稿件*6" },
-  { date: "2026-06-03", member: "刘依晨", project: "投放", name: "6.3 亚洲龙 媒体*5" },
-  { date: "2026-06-03", member: "辛味珈", project: "招聘", name: "6.3 线上面试3人" },
-  { date: "2026-06-03", member: "辛味珈", project: "北大深圳研究生院GEO", name: "6.3 准备北大GEO优化知识库内容" },
-  { date: "2026-06-03", member: "辛味珈", project: "撰稿", name: "6.3 一丰荣放第五批稿件*3" },
-  { date: "2026-06-03", member: "郝奕菲", project: "哲库林监测", name: "63监测" },
-];
-
-let allTasks = [...fallbackTasks];
-let tasks = [...fallbackTasks];
-let weekDays = [
-  ["2026-06-01", "周一", "6/1"],
-  ["2026-06-02", "周二", "6/2"],
-  ["2026-06-03", "周三", "6/3"],
-  ["2026-06-04", "周四", "6/4"],
-  ["2026-06-05", "周五", "6/5"],
-  ["2026-06-06", "周六", "6/6"],
-  ["2026-06-07", "周日", "6/7"],
-];
+let allTasks = [];
+let tasks = [];
+let weekDays = [];
 
 const palette = ["#2f6bff", "#7c3aed", "#22b573", "#f59e0b", "#f43f5e", "#06b6d4", "#8b5cf6", "#14b8a6"];
 let projects = [];
@@ -64,6 +17,8 @@ let viewMode = "calendar";
 let compact = false;
 let hideEmptyDays = false;
 let expandedRootProjects = new Set();
+let dataReady = false;
+let dataLoadError = "";
 
 const memberList = document.querySelector("#memberList");
 const pageLabel = document.querySelector("#pageLabel");
@@ -140,7 +95,47 @@ function buildWeekOptions(sourceTasks, sourceWeeks = []) {
   });
 }
 
-function buildWeekDays(sourceTasks) {
+function chooseDefaultWeekIndex(options) {
+  if (!options.length) return 0;
+  const today = localIsoDate(new Date());
+  const currentWeekIndex = options.findIndex((week) => today >= week.start && today <= week.end);
+  if (currentWeekIndex >= 0) return currentWeekIndex;
+  const latestPastWeekIndex = options.reduce((best, week, index) => (week.start <= today ? index : best), -1);
+  return latestPastWeekIndex >= 0 ? latestPastWeekIndex : options.length - 1;
+}
+
+function isBadLabel(value) {
+  const text = String(value || "").trim();
+  return (
+    !text ||
+    text === "undefined" ||
+    text === "null" ||
+    text === "text" ||
+    /^tbl[a-zA-Z0-9]+(?:\s+text)?$/.test(text) ||
+    /^rec[a-zA-Z0-9]+$/.test(text)
+  );
+}
+
+function cleanLabel(value, fallback = "未归类") {
+  const text = String(value || "").trim();
+  return isBadLabel(text) ? fallback : text;
+}
+
+function cleanTask(task) {
+  const project = cleanLabel(task.project, "未归类");
+  const subProject = cleanLabel(task.subProject, project);
+  const rootProject = cleanLabel(task.rootProject, subProject || project || "未归类");
+  return {
+    date: task.date,
+    member: cleanLabel(task.member, "未分配"),
+    project,
+    subProject,
+    rootProject,
+    name: cleanLabel(task.name, "未命名任务"),
+  };
+}
+
+function buildWeekDays(sourceTasks = []) {
   const activeWeek = weekOptions[activeWeekIndex];
   const monday = activeWeek ? dateFromIso(activeWeek.start) : dateFromIso(startOfWeek(sourceTasks[0]?.date || localIsoDate(new Date())));
   const names = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
@@ -176,6 +171,7 @@ function refreshDerivedData() {
 async function loadData() {
   assertLocalDateMath();
   const previousWeekStart = weekOptions[activeWeekIndex]?.start;
+  const hadReliableData = dataReady;
   let sourceWeeks = [];
   try {
     const response = await fetch(`./data.json?ts=${Date.now()}`, { cache: "no-store" });
@@ -183,20 +179,18 @@ async function loadData() {
     const payload = await response.json();
     if (!Array.isArray(payload.tasks) || !payload.tasks.length) throw new Error("data.json has no tasks");
     sourceWeeks = payload.source?.weeks || [];
-    allTasks = payload.tasks.map((task) => ({
-      date: task.date,
-      member: task.member,
-      project: task.project || "未归类",
-      subProject: task.subProject || task.project || "未归类",
-      rootProject: task.rootProject || task.project || "未归类",
-      name: task.name,
-    }));
+    allTasks = payload.tasks.map(cleanTask).filter((task) => task.date && task.name);
+    dataReady = true;
+    dataLoadError = "";
   } catch (error) {
-    allTasks = [...fallbackTasks];
+    allTasks = [];
+    dataReady = false;
+    dataLoadError = "飞书数据暂时没有加载成功，请刷新页面或稍后再试。";
+    console.warn(error);
   }
   weekOptions = buildWeekOptions(allTasks, sourceWeeks);
-  const restoredWeekIndex = weekOptions.findIndex((week) => week.start === previousWeekStart);
-  activeWeekIndex = restoredWeekIndex >= 0 ? restoredWeekIndex : Math.max(0, weekOptions.length - 1);
+  const restoredWeekIndex = hadReliableData ? weekOptions.findIndex((week) => week.start === previousWeekStart) : -1;
+  activeWeekIndex = restoredWeekIndex >= 0 ? restoredWeekIndex : chooseDefaultWeekIndex(weekOptions);
   refreshDerivedData();
 }
 
@@ -264,6 +258,7 @@ function renderMembers() {
   memberList.innerHTML = "";
   if (!members.length) {
     pageLabel.textContent = "0 / 0";
+    memberList.innerHTML = `<div class="empty-day">${dataLoadError || "当前周暂无成员任务"}</div>`;
     return;
   }
   members.forEach((member, index) => {
@@ -313,6 +308,10 @@ function renderWeekSwitcher() {
 
 function renderProjectOverview() {
   const groups = projectGroups(searchedTasks());
+  if (!groups.length) {
+    projectOverviewList.innerHTML = `<div class="empty-day">${dataLoadError || "当前筛选下暂无项目任务"}</div>`;
+    return;
+  }
   const max = Math.max(...groups.map((group) => group.count), 1);
   projectOverviewList.innerHTML = groups
     .map((group, index) => {
