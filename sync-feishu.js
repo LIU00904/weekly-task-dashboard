@@ -27,31 +27,39 @@ function required(name) {
 }
 
 async function request(url, options = {}) {
-  const timeoutMs = Number(process.env.FEISHU_REQUEST_TIMEOUT_MS || 20000);
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  let response;
-  try {
-    response = await fetch(url, { ...options, signal: controller.signal });
-  } catch (error) {
-    if (error.name === "AbortError") {
-      throw new Error(`Feishu API timeout after ${timeoutMs}ms at ${url}`);
+  const timeoutMs = Number(process.env.FEISHU_REQUEST_TIMEOUT_MS || 60000);
+  const maxAttempts = Number(process.env.FEISHU_REQUEST_ATTEMPTS || 3);
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, { ...options, signal: controller.signal });
+      const text = await response.text();
+      let payload;
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        throw new Error(`Invalid JSON from ${url}: ${text.slice(0, 300)}`);
+      }
+      if (!response.ok || payload.code !== 0) {
+        throw new Error(`Feishu API error ${payload.code || response.status} at ${url}: ${payload.msg || text}`);
+      }
+      return payload.data || payload;
+    } catch (error) {
+      lastError = error.name === "AbortError"
+        ? new Error(`Feishu API timeout after ${timeoutMs}ms at ${url}`)
+        : error;
+      if (attempt < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 1500));
+      }
+    } finally {
+      clearTimeout(timeout);
     }
-    throw error;
-  } finally {
-    clearTimeout(timeout);
   }
-  const text = await response.text();
-  let payload;
-  try {
-    payload = JSON.parse(text);
-  } catch {
-    throw new Error(`Invalid JSON from ${url}: ${text.slice(0, 300)}`);
-  }
-  if (!response.ok || payload.code !== 0) {
-    throw new Error(`Feishu API error ${payload.code || response.status} at ${url}: ${payload.msg || text}`);
-  }
-  return payload.data || payload;
+
+  throw lastError;
 }
 
 async function getTenantToken(appId, appSecret) {
