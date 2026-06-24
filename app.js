@@ -19,6 +19,7 @@ let hideEmptyDays = false;
 let expandedRootProjects = new Set();
 let dataReady = false;
 let dataLoadError = "";
+const dataCacheKey = "oxygen-weekly-dashboard:data:v3";
 
 const memberList = document.querySelector("#memberList");
 const pageLabel = document.querySelector("#pageLabel");
@@ -135,6 +136,58 @@ function cleanTask(task) {
   };
 }
 
+function readCachedPayload() {
+  try {
+    const raw = window.localStorage?.getItem(dataCacheKey);
+    if (!raw) return null;
+    const cached = JSON.parse(raw);
+    if (!Array.isArray(cached.tasks) || !cached.tasks.length) return null;
+    return cached;
+  } catch (error) {
+    console.warn("Failed to read dashboard cache", error);
+    return null;
+  }
+}
+
+function writeCachedPayload(payload) {
+  try {
+    window.localStorage?.setItem(
+      dataCacheKey,
+      JSON.stringify({
+        ...payload,
+        cachedAt: new Date().toISOString(),
+      })
+    );
+  } catch (error) {
+    console.warn("Failed to write dashboard cache", error);
+  }
+}
+
+function applyPayload(payload, { previousWeekStart = "", hadReliableData = false, fromCache = false } = {}) {
+  if (!Array.isArray(payload.tasks) || !payload.tasks.length) throw new Error("data.json has no tasks");
+  const sourceWeeks = payload.source?.weeks || [];
+  allTasks = payload.tasks.map(cleanTask).filter((task) => task.date && task.name);
+  if (!allTasks.length) throw new Error("data.json has no usable tasks");
+  dataReady = true;
+  dataLoadError = fromCache ? "正在显示上次成功缓存的数据，后台会继续刷新。" : "";
+  weekOptions = buildWeekOptions(allTasks, sourceWeeks);
+  const restoredWeekIndex = hadReliableData ? weekOptions.findIndex((week) => week.start === previousWeekStart) : -1;
+  activeWeekIndex = restoredWeekIndex >= 0 ? restoredWeekIndex : chooseDefaultWeekIndex(weekOptions);
+  refreshDerivedData();
+}
+
+function hydrateFromCache() {
+  const cached = readCachedPayload();
+  if (!cached) return false;
+  try {
+    applyPayload(cached, { fromCache: true });
+    return true;
+  } catch (error) {
+    console.warn("Failed to hydrate dashboard cache", error);
+    return false;
+  }
+}
+
 function buildWeekDays(sourceTasks = []) {
   const activeWeek = weekOptions[activeWeekIndex];
   const monday = activeWeek ? dateFromIso(activeWeek.start) : dateFromIso(startOfWeek(sourceTasks[0]?.date || localIsoDate(new Date())));
@@ -172,26 +225,35 @@ async function loadData() {
   assertLocalDateMath();
   const previousWeekStart = weekOptions[activeWeekIndex]?.start;
   const hadReliableData = dataReady;
-  let sourceWeeks = [];
   try {
     const response = await fetch(`./data.json?ts=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) throw new Error("No data.json");
     const payload = await response.json();
-    if (!Array.isArray(payload.tasks) || !payload.tasks.length) throw new Error("data.json has no tasks");
-    sourceWeeks = payload.source?.weeks || [];
-    allTasks = payload.tasks.map(cleanTask).filter((task) => task.date && task.name);
-    dataReady = true;
-    dataLoadError = "";
+    applyPayload(payload, { previousWeekStart, hadReliableData });
+    writeCachedPayload(payload);
   } catch (error) {
+    console.warn(error);
+    if (hadReliableData) {
+      dataLoadError = "";
+      refreshDerivedData();
+      return;
+    }
+    const cached = readCachedPayload();
+    if (cached) {
+      try {
+        applyPayload(cached, { fromCache: true });
+        return;
+      } catch (cacheError) {
+        console.warn(cacheError);
+      }
+    }
     allTasks = [];
     dataReady = false;
     dataLoadError = "飞书数据暂时没有加载成功，请刷新页面或稍后再试。";
-    console.warn(error);
+    weekOptions = buildWeekOptions(allTasks, []);
+    activeWeekIndex = chooseDefaultWeekIndex(weekOptions);
+    refreshDerivedData();
   }
-  weekOptions = buildWeekOptions(allTasks, sourceWeeks);
-  const restoredWeekIndex = hadReliableData ? weekOptions.findIndex((week) => week.start === previousWeekStart) : -1;
-  activeWeekIndex = restoredWeekIndex >= 0 ? restoredWeekIndex : chooseDefaultWeekIndex(weekOptions);
-  refreshDerivedData();
 }
 
 function taskMatchesProject(task, project) {
@@ -627,6 +689,7 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") closeDrawer();
 });
 
+if (hydrateFromCache()) render();
 loadData().then(render);
 setInterval(() => {
   loadData().then(render);
