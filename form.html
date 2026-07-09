@@ -47,7 +47,10 @@
         <form id="taskForm">
           <div class="new-project root-project">
             <input id="newRootProjectName" type="text" placeholder="新增一级项目名称" />
-            <button type="button" id="addRootProjectBtn">新增一级项目</button>
+            <button class="inline-action" type="button" id="addRootProjectBtn">
+              <span class="action-label">新增一级项目</span>
+              <span class="action-progress" aria-hidden="true"></span>
+            </button>
           </div>
 
           <div class="grid">

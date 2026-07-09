@@ -16,6 +16,7 @@ const els = {
   selects: [document.querySelector("#projectLevel0"), document.querySelector("#projectLevel1"), document.querySelector("#projectLevel2")],
   newRootProjectName: document.querySelector("#newRootProjectName"),
   addRootProjectBtn: document.querySelector("#addRootProjectBtn"),
+  addRootProjectLabel: document.querySelector("#addRootProjectBtn .action-label"),
   newProjectName: document.querySelector("#newProjectName"),
   taskForm: document.querySelector("#taskForm"),
   taskName: document.querySelector("#taskName"),
@@ -211,6 +212,20 @@ function setSubmitSuccess() {
   els.submitLabel.textContent = "已提交，写入成功";
 }
 
+function setRootProjectCreating(isCreating, label = "新增一级项目") {
+  els.addRootProjectBtn.disabled = isCreating;
+  els.newRootProjectName.disabled = isCreating;
+  els.addRootProjectBtn.classList.toggle("is-loading", isCreating);
+  els.addRootProjectBtn.classList.remove("is-success");
+  els.addRootProjectLabel.textContent = label;
+}
+
+function setRootProjectCreated() {
+  els.addRootProjectBtn.classList.remove("is-loading");
+  els.addRootProjectBtn.classList.add("is-success");
+  els.addRootProjectLabel.textContent = "已新增";
+}
+
 async function boot() {
   els.taskDate.value = todayIso();
   els.deadline.value = "";
@@ -251,10 +266,19 @@ els.collaboratorList.addEventListener("click", (event) => {
 els.addRootProjectBtn.addEventListener("click", async () => {
   const name = els.newRootProjectName.value.trim();
   if (!name) return showResult("error", "先写一个一级项目名称。");
-  const created = await createProject(name);
-  els.newRootProjectName.value = "";
-  selectProjectPath(created.id);
-  showResult("success", `已新增一级项目：${created.name}`);
+  try {
+    setRootProjectCreating(true, "正在同步...");
+    showResult("success", `正在新增一级项目「${name}」并同步飞书...`);
+    const created = await createProject(name);
+    els.newRootProjectName.value = "";
+    selectProjectPath(created.id);
+    setRootProjectCreated();
+    showResult("success", `已新增一级项目：${created.name}`);
+    setTimeout(() => setRootProjectCreating(false), 1300);
+  } catch (error) {
+    setRootProjectCreating(false);
+    showResult("error", error.message);
+  }
 });
 
 els.taskForm.addEventListener("submit", async (event) => {
